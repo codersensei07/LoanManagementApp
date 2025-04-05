@@ -1,0 +1,24 @@
+Below code structure is a simple example of a DAML project for a loan management application. It includes various components such as enums, parties, application logic, and utility functions.
+
+```
+
+loanManagementApp/
+├── daml.yaml
+├── Main.daml
+├── Setup.daml
+└── src/
+    ├── Types/
+    │   └── Enums.daml
+    ├── Parties/
+    │   └── BankCustomer.daml
+    ├── Application/
+    │   ├── LoanApplication.daml
+    │   └── RejectedLoan.daml
+    ├── Loan/
+    │   └── LoanAgreement.daml
+    ├── Payment/
+    │   └── EMIPayment.daml
+    └── Utils/
+        └── Calculator.daml
+
+```
