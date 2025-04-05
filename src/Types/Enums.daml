@@ -1,0 +1,18 @@
+module Types.Enums where
+
+data LoanStatus = 
+    Pending 
+  | Approved 
+  | Rejected
+  deriving (Eq, Show)
+
+data PaymentStatus = 
+      PaymentPending 
+    | Paid
+  deriving (Eq, Show)
+
+data RejectionReason = 
+    LowCreditScore
+  | ExistingLoanActive
+  | InvalidTerm
+  deriving (Eq, Show)
