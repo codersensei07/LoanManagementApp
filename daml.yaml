@@ -1,8 +1,8 @@
 sdk-version: 2.10.0
-name: loanManagementApp
-version: 0.0.1
-source: src
-init-script: Main:setup
+name: LoanManagementApp
+version: 1.0.0
+source: Main
+# init-script: Main.Setup:initializeFromQuery
 dependencies:
   - daml-prim
   - daml-stdlib

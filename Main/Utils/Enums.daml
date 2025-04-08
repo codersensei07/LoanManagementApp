@@ -1,4 +1,4 @@
-module Types.Enums where
+module Utils.Enums where
 
 data LoanStatus = 
     Pending 
@@ -15,4 +15,15 @@ data RejectionReason =
     LowCreditScore
   | ExistingLoanActive
   | InvalidTerm
+  deriving (Eq, Show)
+
+data CibilThreshold = 
+    Low 
+  | Medium 
+  | High
+  deriving (Eq, Show)
+
+data CustomerEmploymentStatus = 
+    Employed 
+  | Unemployed
   deriving (Eq, Show)

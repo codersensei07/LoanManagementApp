@@ -1,3 +1,0 @@
-module Payment.EMIPayment where
-
--- This module provides a simple interface for making payments using the EMIPayment API.

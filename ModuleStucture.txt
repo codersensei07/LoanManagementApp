@@ -5,20 +5,20 @@ Below code structure is a simple example of a DAML project for a loan management
 loanManagementApp/
 ├── daml.yaml
 ├── Main.daml
-├── Setup.daml
-└── src/
-    ├── Types/
-    │   └── Enums.daml
-    ├── Parties/
-    │   └── BankCustomer.daml
-    ├── Application/
-    │   ├── LoanApplication.daml
-    │   └── RejectedLoan.daml
+└── Main/
     ├── Loan/
-    │   └── LoanAgreement.daml
-    ├── Payment/
-    │   └── EMIPayment.daml
-    └── Utils/
-        └── Calculator.daml
+    │   └── Loan.daml
+    │   └── LoanLimit.daml
+    ├── LoanRequest/
+    │   └── LoanRequest.daml
+    ├── Parties/
+    │   ├── Bank.daml
+    │   └── Customer.daml
+    ├── Token/
+    │   └── Token.daml
+    ├── Utils/
+    │   └── Enums.daml
+    │   └── Utils.daml
+    └── Setup.daml
 
 ```

@@ -1,0 +1,3 @@
+module LoanRequest.LoanRequest where
+
+-- This module defines the LoanRequest data type and its associated functions.

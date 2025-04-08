@@ -1,0 +1,77 @@
+module Main.Setup where
+
+import Daml.Script
+import DA.List as L
+
+-- Define a data structure to hold the parties
+data LedgerParties = LedgerParties with
+  customerA : Party
+  customerB : Party
+  customerC : Party
+  bank : Party
+
+initilize : LedgerParties -> Script ()
+initilize parties = do
+    customerA <- allocateParty "CustomerA"
+    customerB <- allocateParty "CustomerB"
+    customerC <- allocateParty "CustomerC"
+    bank <- allocateParty "Bank"
+    let parties = LedgerParties customerA customerB customerC bank
+    pure ()
+
+-- Function to allocate or find known parties
+queryParties : Script (Optional LedgerParties)
+queryParties = do
+  knownParties <- listKnownParties
+
+  if (L.length knownParties<2) then do
+    cust1 <- allocatePartyWithHint "John" (PartyIdHint "John")
+    cust2 <- allocatePartyWithHint "Alex" (PartyIdHint "Alex")
+    cust3 <- allocatePartyWithHint "Antony" (PartyIdHint "Antony")
+    bank <- allocatePartyWithHint "GSBank" (PartyIdHint "GSBank")
+    pure (Some (LedgerParties cust1 cust2 cust3 bank))
+
+  else do
+    knownParties <- listKnownParties
+    debug knownParties
+
+    let customerA = party <$> find (\p -> p.displayName == Some "John") knownParties
+    let customerB = party <$> find (\p -> p.displayName == Some "Alex") knownParties
+    let customerC = party <$> find (\p -> p.displayName == Some "Bob") knownParties
+    let mBank = party <$> find (\p -> p.displayName == Some "GSBank") knownParties
+
+    case (customerA,customerB, customerC, mBank) of
+      (Some customerA, Some customerB, Some customerC, Some bank) -> pure (Some (LedgerParties customerA customerB customerC bank))
+      _ -> pure None
+
+-- Entry point for script execution
+initializeFromQuery : Script ()
+initializeFromQuery = do
+  optParties <- queryParties
+  case optParties of
+    None -> fail "Parties not found."
+    Some parties -> initialiseSetup parties
+
+-- Initialization logic using the parties
+initialiseSetup : LedgerParties -> Script ()
+initialiseSetup parties = do
+  let customerA = parties.customerA
+      customerB = parties.customerB
+      customerC = parties.customerC
+      bank = parties.bank
+
+  now <- getTime
+
+  -- Example data setup (can be used later in templates)
+  let 
+    customerName = "John Doe"
+    customerShortName = "JD"
+    customerAddress = "123 Main St, Springfield, USA"
+    customerPhone = "123-456-7890"
+    customerCreditScore = 700
+    customerIncome = 50000
+    customerLoanAmount = 100000
+    customerLoanTerm = 12
+
+  debug "Initial setup complete"
+  return ()

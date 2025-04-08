@@ -1,0 +1,3 @@
+module Loan.LoanLimit where
+
+-- This module defines the LoanLimit type and its associated functions.

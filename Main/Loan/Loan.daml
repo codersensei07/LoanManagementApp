@@ -1,0 +1,13 @@
+module Loan.Loan where
+
+template Loan
+  with
+    customer: Party
+    bank: Party
+    principal: Decimal
+    interestRate: Decimal
+    termInMonths: Int
+    startDate: Time
+    monthlyEMI: Decimal
+  where
+    signatory bank, customer
