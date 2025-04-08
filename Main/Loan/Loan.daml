@@ -2,16 +2,34 @@ module Loan.Loan where
 
 template Loan
   with
-    customer: Party
+    borrower: Party
     bank: Party
+    loanRequestId : Text
     principal: Decimal
     interestRate: Decimal
     termInMonths: Int
     startDate: Time
     monthlyEMI: Decimal
   where
-    signatory bank, customer
+    signatory bank, borrower
 
-  choice Disburse : ContractId Loan
+    choice Disburse : ContractId Loan
+      controller bank
+      do
+        create Loan with
+          borrower, bank, loanRequestId, principal, interestRate, termInMonths, startDate, monthlyEMI
      
-  choice Repay : ContractId Loan  
+    choice Repay : ContractId Loan  
+      with
+        monthlyEMI: Decimal
+        termInMonths: Int
+        startDate: Time
+      controller borrower
+      do
+        now <- getTime
+        -- let _principal = (principal - monthlyEMI)
+        assertMsg "Monthly EMI should be greater than 0" (monthlyEMI > 0.0)
+        assertMsg "Term in months should be greater than 0" (termInMonths > 0)
+        assertMsg "Start date should be in the past" (startDate < now)
+        create Loan with
+          borrower, bank, loanRequestId, principal, interestRate, termInMonths, startDate, monthlyEMI

@@ -9,21 +9,21 @@ template LoanLimit
     loanAmountUsed : Decimal
   where
     signatory bank
-    key.bank : Party
+    key bank : Party
+    maintainer key
 
-    choice setLoanLimit : ContractId LoanLimit
+    choice UpdateUsedLoanLimit : ContractId LoanLimit
       with
         _loanAmountLimit : Decimal
       controller bank
       do
-        assertMsg("New loan amount limit should be greater than the used amount", _loanAmountLimit >= loanAmountUsed)
+        assertMsg "New loan amount limit should be greater than the used amount" (_loanAmountLimit >= loanAmountUsed)
         create this with loanAmountLimit = _loanAmountLimit
 
-
-    choice setLoanAmountUsed : ContractId LoanLimit
+    choice SetLoanAmountExhausted : ContractId LoanLimit
       with
-        _loanAmountUsed : Integer
+        _loanAmountUsed : Decimal
       controller bank
       do
-        assertMsg("Used loan amount shouldn't exceed the limit", _loanAmountUsed <= loanAmountLimit)
+        assertMsg "Used loan amount shouldn't exceed the limit" (_loanAmountUsed <= loanAmountLimit)
         create this with loanAmountUsed = _loanAmountUsed

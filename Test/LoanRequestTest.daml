@@ -1,19 +1,51 @@
 module Test.LoanRequestTest where
 
-import DA.Test
-import DA.Next
-import DA.List (fold)
-import DA.Time
-import DA.Date
-import DA.Text
-import DA.Optional
-import DA.Map
-import DA.Set
-import DA.Time
-
-
 -- Test Script - Implement a DAML test script that simulates the loan request and approval workflow.
 -- a) A `LoanRequest` contract can be created by the borrower.
 -- b) The bank can approve the `LoanRequest` using the `ApproveRequest` choice.
 -- c) Upon approval, the `LoanRequest` contract is archived.
 -- d) A new `Loan` contract is created with the borrower and bank as signatories.
+
+
+import Daml.Script
+import Main.LoanRequest.LoanRequest
+import Main.Utils.Utils
+
+testLoanWorkflow : Script ()
+
+testLoanWorkflow = script do
+
+  -- Step 1) Create parties
+  borrower <- allocatePartyWithHint "JohnDoe" (PartyIdHint "JohnDoe")
+  bank <- allocatePartyWithHint "GSBank" (PartyIdHint "GSBank")
+
+  -- Step 2) Borrower submits a LoanRequest
+  loanReqCid <- submit borrower do
+    createCmd LoanRequest
+      with
+        borrower = borrower
+        bank = bank
+        borrowerAccountId = AccountId "123456789"
+        amount = 100000.0
+        term = 12
+        interestRate = 5.5
+        borrowerName = "John Doe"
+        borrowerIncome = 50000.0
+
+
+    id : LoanRequestKey
+    borrower : Party
+    bank : Party
+    borrowerAccountId : AccountId
+    loanRequestId : Text
+    loanAmount : Decimal
+    loanTerm : Int
+    requestDate : Time
+  -- Step 3) Bank approves the LoanRequest
+  loanContractId <- submit bank do
+    exerciseCmd loanReqCid ApproveRequest
+
+  -- Step 4) Verify that the Loan contract is created
+  loanContract <- queryContractId @Loan loanCid
+  debug ("Loan contract created with ID: " <> show loanCid)
+  pure

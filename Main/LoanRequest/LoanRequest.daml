@@ -1,8 +1,10 @@
 module LoanRequest.LoanRequest where
 
+
+import Loan.Loan qualified as LoanModule     
+import Loan.LoanLimit qualified as LimitModule  
 import Utils.Utils as LoanRequestLang
-import Utils.Enums
-import Loan.LoanLimit as LoanLimit
+
 
 template LoanRequest
   with
@@ -17,30 +19,31 @@ template LoanRequest
   where 
     signatory borrower
     observer bank
-    key id : LoanRequestKey
 
-    choice ApproveRequest : (ContractId Loan, ContractId LoanLimit)
+    choice ApproveRequest : (ContractId LoanModule.Loan, ContractId LimitModule.LoanLimit)
       with 
-        loanLimitContractId : ContractId LoanLimit
+        loanLimitContractId : ContractId LimitModule.LoanLimit
       controller bank
-      do
-
-          assertMsg("LoanAmount must be greater than 0", loanAmount > 0)
-          assertMsg("LoanTerm must be greater than 0", loanTerm > 0)
+        do
+          now <- getTime
+          assertMsg "LoanAmount must be greater than 0" (loanAmount > 0.0)
+          assertMsg "LoanTerm must be greater than 0" (loanTerm > 0)
           
-          LoanLimit <- fetch loanLimitContractId
-          let estimateUsedAmount = LoanLimit.loanAmountUsed + loanAmount
-          assertMsg("LoanAmount exceeds the limit", estimateUsedAmount <= LoanLimit.loanAmountLimit)
+          loanLimit <- fetch loanLimitContractId
+          let estimateUsedAmount = loanLimit.loanAmountUsed + loanAmount
+          assertMsg "LoanAmount exceeds the limit" (estimateUsedAmount <= loanLimit.loanAmountLimit)
 
-          loan <- create Loan with
+          loan <- create LoanModule.Loan with
             borrower = borrower
             bank = bank
             loanRequestId = loanRequestId
-            loanAmount = loanAmount
-            loanType = loanType
-            loanTerm = loanTerm
-            requestDate = requestDate
+            principal = loanAmount
+            interestRate = 7.5
+            termInMonths = loanTerm
+            monthlyEMI = (loanAmount * 7.5 / 100.00) / 12.00
+            startDate = now
 
-          updateUsedLoanLimit <- exercise loanLimitContractId setLoanAmountUsed with _loanAmountUsed = estimateUsedAmount
+          updateUsedLoanLimit <- exercise loanLimitContractId LimitModule.SetLoanAmountExhausted with 
+            _loanAmountUsed = estimateUsedAmount
 
-          pure(loan, updateUsedLoanLimit)
+          pure (loan, updateUsedLoanLimit)

@@ -1,3 +1,28 @@
 module Token.Token where 
 
--- This module defines the Token data type and its associated functions.
+import Utils.Utils
+
+template Token
+  with
+    bank : Party       
+    borrower : Party     
+    accountHolder : AccountId  
+    tokenQty : Decimal    
+    tokenId : Text      
+    referenceDate : Time     
+  where
+    signatory bank, borrower
+    observer bank, borrower
+    ensure  tokenQty > 0.0
+    
+    choice Transfer : ContractId Token
+      with
+        borrower : Party
+      controller borrower
+      do
+        now <- getTime
+        create this with
+          borrower = borrower
+          tokenQty =  tokenQty
+          referenceDate = now
+          tokenId = tokenId
