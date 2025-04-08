@@ -1,3 +1,46 @@
 module LoanRequest.LoanRequest where
 
--- This module defines the LoanRequest data type and its associated functions.
+import Utils.Utils as LoanRequestLang
+import Utils.Enums
+import Loan.LoanLimit as LoanLimit
+
+template LoanRequest
+  with
+    id : LoanRequestKey
+    borrower : Party
+    bank : Party
+    borrowerAccountId : AccountId
+    loanRequestId : Text
+    loanAmount : Decimal
+    loanTerm : Int
+    requestDate : Time
+  where 
+    signatory borrower
+    observer bank
+    key id : LoanRequestKey
+
+    choice ApproveRequest : (ContractId Loan, ContractId LoanLimit)
+      with 
+        loanLimitContractId : ContractId LoanLimit
+      controller bank
+      do
+
+          assertMsg("LoanAmount must be greater than 0", loanAmount > 0)
+          assertMsg("LoanTerm must be greater than 0", loanTerm > 0)
+          
+          LoanLimit <- fetch loanLimitContractId
+          let estimateUsedAmount = LoanLimit.loanAmountUsed + loanAmount
+          assertMsg("LoanAmount exceeds the limit", estimateUsedAmount <= LoanLimit.loanAmountLimit)
+
+          loan <- create Loan with
+            borrower = borrower
+            bank = bank
+            loanRequestId = loanRequestId
+            loanAmount = loanAmount
+            loanType = loanType
+            loanTerm = loanTerm
+            requestDate = requestDate
+
+          updateUsedLoanLimit <- exercise loanLimitContractId setLoanAmountUsed with _loanAmountUsed = estimateUsedAmount
+
+          pure(loan, updateUsedLoanLimit)

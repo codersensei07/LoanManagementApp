@@ -11,3 +11,7 @@ template Loan
     monthlyEMI: Decimal
   where
     signatory bank, customer
+
+  choice Disburse : ContractId Loan
+     
+  choice Repay : ContractId Loan  

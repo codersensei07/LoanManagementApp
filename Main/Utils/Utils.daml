@@ -1,3 +1,17 @@
 module Utils.Utils where
 
 -- placeholder for the actual implementation
+
+data LoanRequestKey  = LoanRequestKey
+    with 
+        customer : Party
+        customerId : Text
+        loanRequestId : Text
+    deriving (Eq, Show, Ord)
+
+data AccountId = AccountId
+    with
+        accountHolder : Party
+        accountNumber : Text
+    deriving (Eq, Show, Ord)
+    

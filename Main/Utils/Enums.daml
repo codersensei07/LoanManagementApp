@@ -1,6 +1,6 @@
 module Utils.Enums where
 
-data LoanStatus = 
+data RequestStatus = 
     Pending 
   | Approved 
   | Rejected

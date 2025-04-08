@@ -1,3 +1,29 @@
 module Loan.LoanLimit where
 
--- This module defines the LoanLimit type and its associated functions.
+import DA.Assert
+
+template LoanLimit
+  with
+    bank : Party
+    loanAmountLimit : Decimal
+    loanAmountUsed : Decimal
+  where
+    signatory bank
+    key.bank : Party
+
+    choice setLoanLimit : ContractId LoanLimit
+      with
+        _loanAmountLimit : Decimal
+      controller bank
+      do
+        assertMsg("New loan amount limit should be greater than the used amount", _loanAmountLimit >= loanAmountUsed)
+        create this with loanAmountLimit = _loanAmountLimit
+
+
+    choice setLoanAmountUsed : ContractId LoanLimit
+      with
+        _loanAmountUsed : Integer
+      controller bank
+      do
+        assertMsg("Used loan amount shouldn't exceed the limit", _loanAmountUsed <= loanAmountLimit)
+        create this with loanAmountUsed = _loanAmountUsed
