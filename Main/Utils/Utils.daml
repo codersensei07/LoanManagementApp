@@ -1,10 +1,6 @@
 module Utils.Utils where
 
 -- placeholder for the actual implementation
-import DA.Time (time)
-import DA.Random
-import DA.Date (toDateUTC)
-
 
 data LoanRequestKey  = LoanRequestKey
     with 
