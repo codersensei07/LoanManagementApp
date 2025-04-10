@@ -1,6 +1,10 @@
 module Utils.Utils where
 
 -- placeholder for the actual implementation
+import DA.Time (time)
+import DA.Random
+import DA.Date (toDateUTC)
+
 
 data LoanRequestKey  = LoanRequestKey
     with 
@@ -11,7 +15,20 @@ data LoanRequestKey  = LoanRequestKey
 
 data AccountId = AccountId
     with
-        accountHolder : Party
+        accountOperator : Party
         accountNumber : Text
     deriving (Eq, Show, Ord)
-    
+
+data TokenId = TokenId
+    with 
+      accountOperator : Party
+      accountNumber : Text
+      loanRequestId : Text
+    deriving (Eq, Show, Ord)
+
+data SuccessExceptionKey = SuccessExceptionKey
+    with
+        bank : Party
+        id : Text
+        loanRequestId : Text
+    deriving (Eq, Show, Ord)

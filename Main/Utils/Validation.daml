@@ -1,0 +1,12 @@
+module Utils.Validation where
+
+import DA.Action
+import DA.Exception (throw)
+
+
+exception InsufficientTokenQtyException
+    with
+        availableQty : Decimal
+        tokenToTransfer : Decimal
+    where
+        message "Insufficient token quantity. Available: " <> show availableQty <> ", requested: " <> show tokenToTransfer

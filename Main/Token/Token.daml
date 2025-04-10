@@ -1,28 +1,177 @@
 module Token.Token where 
 
 import Utils.Utils
+import Utils.Validation
+import DA.Exception
+import DA.Set
 
 template Token
   with
-    bank : Party       
-    borrower : Party     
-    accountHolder : AccountId  
+    id : TokenId
+    bank : Party         
+    holderAccount : AccountId  
+    loanRequestId : Text
     tokenQty : Decimal    
-    tokenId : Text      
-    referenceDate : Time     
+    modifiedTime : Optional Time
+    signatories : Set Party
+     
   where
-    signatory bank, borrower
-    observer bank, borrower
-    ensure  tokenQty > 0.0
+  ensure holderAccount.accountNumber /= ""
+  signatory signatories
+  observer holderAccount.accountOperator, bank
+  key TokenId with accountOperator = holderAccount.accountOperator , accountNumber=holderAccount.accountNumber, loanRequestId : TokenId
+  maintainer key.accountOperator
     
-    choice Transfer : ContractId Token
-      with
-        borrower : Party
-      controller borrower
+
+  choice Transfer : (Optional(ContractId Token), Optional(ContractId Token) , Optional(ContractId TokenTransferSuccess), Optional(ContractId TokenTransferException))
+    with
+      transferTo : AccountId
+      tokenToTransfer : Decimal
+      endToEndId : Text
+      bank : Party
+      borrower : Party
+    controller bank
       do
-        now <- getTime
-        create this with
-          borrower = borrower
-          tokenQty =  tokenQty
-          referenceDate = now
-          tokenId = tokenId
+        try do
+            now <- getTime
+
+            assertMsg "Token to transfer must be greater than 0" (tokenToTransfer > 0.0)
+            assertMsg "Token to transfer must be less than or equal to available amount" (tokenToTransfer <= tokenQty) 
+
+            let remainingQty = tokenQty - tokenToTransfer
+                contractKey = TokenId with accountOperator = bank, accountNumber = transferTo.accountNumber, loanRequestId : TokenId
+
+            isTransferContractExist <- visibleByKey @Token contractKey
+            debug $ "isTransferContractExist: " <> show isTransferContractExist
+            mToken <- if isTransferContractExist
+                      then do
+                        (fetchedContractId , fetchedContract) <- fetchByKey @Token contractKey
+                        debug $ "fetched contract is: " <> show fetchedContract
+                        archive fetchedContractId
+                        debug$ "tokens to transfer : -" <> show (tokenToTransfer + fetchedContract.tokenQty)
+
+                        create Token
+                          with 
+                            id = TokenId with accountOperator = transferTo.accountOperator, accountNumber = transferTo.accountNumber, loanRequestId 
+                            bank 
+                            holderAccount = transferTo 
+                            loanRequestId 
+                            tokenQty = tokenToTransfer + fetchedContract.tokenQty
+                            modifiedTime = Some now
+                            signatories = fromList $[bank]
+                      else do
+                        -- create a new contract if it does not exist
+                          create Token 
+                            with 
+                              id = TokenId with accountOperator = transferTo.accountOperator, accountNumber = transferTo.accountNumber, loanRequestId 
+                              bank 
+                              holderAccount = transferTo 
+                              loanRequestId 
+                              tokenQty = tokenToTransfer
+                              modifiedTime = Some now
+                              signatories = fromList $[bank]
+            
+            nToken <- if remainingQty ==0.0
+                      then do
+                          pure self
+                      else do
+                          create this with tokenQty = remainingQty
+            
+
+
+            tokenTransferSuccessContractId <- create TokenTransferSuccess with
+                  endToEndId
+                  loanRequestId
+                  bank
+                  borrower
+                  successMsg = "Token Transfer Successfully from "<> show bank <> " to " <> show transferTo <> " with amount: " <> show tokenToTransfer            
+                  creationTime = Some now
+            
+            pure(Some mToken, Some nToken, Some tokenTransferSuccessContractId, None)
+          
+        catch
+            (InsufficientTokenQtyException _ _) -> do
+                now <- getTime
+                
+                exceptionContractId <- create TokenTransferException
+                  with
+                      endToEndId
+                      loanRequestId
+                      bank
+                      borrower
+                      exceptionType = "Insufficient Token Quantity"
+                      creationTime = Some now
+                
+                pToken <- create Token 
+                  with
+                      id = TokenId with accountOperator = bank, accountNumber = holderAccount.accountNumber, loanRequestId 
+                      bank 
+                      holderAccount 
+                      loanRequestId 
+                      tokenQty
+                      modifiedTime = Some now
+                      signatories = fromList $[bank]
+                      
+                pure (Some pToken, None, None, Some exceptionContractId)
+          
+            (GeneralError _) -> do
+              now <- getTime
+              exceptionContractId <- create TokenTransferException
+                with
+                    endToEndId
+                    loanRequestId
+                    bank
+                    borrower
+                    exceptionType = "General Error"
+                    creationTime = Some now
+              
+              pToken <- create Token 
+                with
+                    id = TokenId with accountOperator = bank, accountNumber = holderAccount.accountNumber, loanRequestId 
+                    bank 
+                    holderAccount 
+                    loanRequestId 
+                    tokenQty
+                    modifiedTime = Some now
+                    signatories = fromList $[bank]
+                    
+              pure (Some pToken, None, None, Some exceptionContractId)
+
+
+template TokenTransferSuccess
+  with
+    endToEndId : Text
+    loanRequestId : Text
+    bank : Party
+    borrower : Party
+    successMsg : Text
+    creationTime : Optional Time
+  where
+  signatory bank, borrower
+  observer bank, borrower
+  key SuccessExceptionKey with  bank , id = endToEndId, loanRequestId : SuccessExceptionKey
+  maintainer key.bank
+
+  choice Archive_TokenTransferSuccess : ()
+    controller bank
+    do return ()
+
+
+template TokenTransferException
+  with
+    endToEndId : Text
+    loanRequestId : Text
+    bank : Party
+    borrower : Party
+    exceptionType : Text
+    creationTime : Optional Time
+  where
+  signatory bank, borrower
+  observer bank, borrower
+  key SuccessExceptionKey with  bank , id = endToEndId, loanRequestId : SuccessExceptionKey
+  maintainer key.bank
+
+  choice Archive_TokenTransferException : ()
+    controller bank
+    do return ()
+
