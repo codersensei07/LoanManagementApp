@@ -1,9 +1,10 @@
-module Token.Token where 
+module Main.Token.Token where 
 
-import Utils.Utils
-import Utils.Validation
+import Main.Utils.Utils
+import Main.Utils.Validation
 import DA.Exception
-import DA.Set
+import qualified DA.Set as Set
+import DA.Assert
 
 template Token
   with
@@ -13,11 +14,11 @@ template Token
     loanRequestId : Text
     tokenQty : Decimal    
     modifiedTime : Optional Time
-    signatories : Set Party
+    signatories : Set.Set Party
      
   where
   ensure holderAccount.accountNumber /= ""
-  signatory signatories
+  signatory bank
   observer holderAccount.accountOperator, bank
   key TokenId with accountOperator = holderAccount.accountOperator , accountNumber=holderAccount.accountNumber, loanRequestId : TokenId
   maintainer key.accountOperator
@@ -41,36 +42,36 @@ template Token
             let remainingQty = tokenQty - tokenToTransfer
                 contractKey = TokenId with accountOperator = bank, accountNumber = transferTo.accountNumber, loanRequestId : TokenId
 
-            isTransferContractExist <- visibleByKey @Token contractKey
-            debug $ "isTransferContractExist: " <> show isTransferContractExist
-            mToken <- if isTransferContractExist
-                      then do
-                        (fetchedContractId , fetchedContract) <- fetchByKey @Token contractKey
-                        debug $ "fetched contract is: " <> show fetchedContract
-                        archive fetchedContractId
-                        debug$ "tokens to transfer : -" <> show (tokenToTransfer + fetchedContract.tokenQty)
+                         mExistingTokenCid <- lookupByKey @Token contractKey
+             debug $ "mExistingTokenCid: " <> show mExistingTokenCid
+             mToken <- case mExistingTokenCid of
+                       Some fetchedContractId -> do
+                         fetchedContract <- fetch fetchedContractId
+                         debug $ "fetched contract is: " <> show fetchedContract
+                         archive fetchedContractId
+                         debug $ "tokens to transfer : -" <> show (tokenToTransfer + fetchedContract.tokenQty)
 
-                        create Token
-                          with 
-                            id = TokenId with accountOperator = transferTo.accountOperator, accountNumber = transferTo.accountNumber, loanRequestId 
-                            bank 
-                            holderAccount = transferTo 
-                            loanRequestId 
-                            tokenQty = tokenToTransfer + fetchedContract.tokenQty
-                            modifiedTime = Some now
-                            signatories = fromList $[bank]
-                      else do
-                        -- create a new contract if it does not exist
-                          create Token 
-                            with 
-                              id = TokenId with accountOperator = transferTo.accountOperator, accountNumber = transferTo.accountNumber, loanRequestId 
-                              bank 
-                              holderAccount = transferTo 
-                              loanRequestId 
-                              tokenQty = tokenToTransfer
-                              modifiedTime = Some now
-                              signatories = fromList $[bank]
-            
+                         create Token
+                           with 
+                             id = TokenId with accountOperator = transferTo.accountOperator, accountNumber = transferTo.accountNumber, loanRequestId 
+                             bank 
+                             holderAccount = transferTo 
+                             loanRequestId 
+                             tokenQty = tokenToTransfer + fetchedContract.tokenQty
+                             modifiedTime = Some now
+                             signatories = Set.fromList $[bank]
+                       None -> do
+                         -- create a new contract if it does not exist
+                           create Token 
+                             with 
+                               id = TokenId with accountOperator = transferTo.accountOperator, accountNumber = transferTo.accountNumber, loanRequestId 
+                               bank 
+                               holderAccount = transferTo 
+                               loanRequestId 
+                               tokenQty = tokenToTransfer
+                               modifiedTime = Some now
+                               signatories = Set.fromList $[bank]
+
             nToken <- if remainingQty ==0.0
                       then do
                           pure self
@@ -110,7 +111,7 @@ template Token
                       loanRequestId 
                       tokenQty
                       modifiedTime = Some now
-                      signatories = fromList $[bank]
+                      signatories = Set.fromList $[bank]
                       
                 pure (Some pToken, None, None, Some exceptionContractId)
           
@@ -133,7 +134,7 @@ template Token
                     loanRequestId 
                     tokenQty
                     modifiedTime = Some now
-                    signatories = fromList $[bank]
+                    signatories = Set.fromList $[bank]
                     
               pure (Some pToken, None, None, Some exceptionContractId)
 

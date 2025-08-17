@@ -1,9 +1,11 @@
-module LoanRequest.LoanRequest where
+module Main.LoanRequest.LoanRequest where
 
 
-import Loan.Loan qualified as LoanModule     
-import Loan.LoanLimit qualified as LimitModule  
-import Utils.Utils as LoanRequestLang
+import Main.Loan.Loan qualified as LoanModule     
+import Main.Loan.LoanLimit qualified as LimitModule  
+import Main.Utils.Utils
+import DA.Assert
+import DA.Time
 
 
 template LoanRequest
@@ -20,7 +22,7 @@ template LoanRequest
     signatory borrower
     observer bank
 
-    choice ApproveRequest : (ContractId LoanModule.Loan, ContractId LimitModule.LoanLimit)
+    consuming choice ApproveRequest : (ContractId LoanModule.Loan, ContractId LimitModule.LoanLimit)
       with 
         loanLimitContractId : ContractId LimitModule.LoanLimit
       controller bank

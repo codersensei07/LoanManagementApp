@@ -9,7 +9,10 @@ module Test.LoanRequestTest where
 
 import Daml.Script
 import Main.LoanRequest.LoanRequest
+import Main.Loan.Loan
+import Main.Loan.LoanLimit
 import Main.Utils.Utils
+
 
 testLoanWorkflow : Script ()
 
@@ -19,33 +22,33 @@ testLoanWorkflow = script do
   borrower <- allocatePartyWithHint "JohnDoe" (PartyIdHint "JohnDoe")
   bank <- allocatePartyWithHint "GSBank" (PartyIdHint "GSBank")
 
-  -- Step 2) Borrower submits a LoanRequest
+  now <- getTime
+
+  -- Step 2) Create a LoanLimit for the bank
+  loanLimitCid <- submit bank do
+    createCmd LoanLimit with
+      bank
+      loanAmountLimit = 200000.0
+      loanAmountUsed = 0.0
+
+  -- Step 3) Borrower submits a LoanRequest
   loanReqCid <- submit borrower do
     createCmd LoanRequest
       with
+        id = LoanRequestKey with customer = borrower, customerId = "CUST-1", loanRequestId = "LR-1"
         borrower = borrower
         bank = bank
-        borrowerAccountId = AccountId "123456789"
-        amount = 100000.0
-        term = 12
-        interestRate = 5.5
-        borrowerName = "John Doe"
-        borrowerIncome = 50000.0
+        borrowerAccountId = AccountId with accountOperator = borrower, accountNumber = "123456789"
+        loanRequestId = "LR-1"
+        loanAmount = 100000.0
+        loanTerm = 12
+        requestDate = now
 
+  -- Step 4) Bank approves the LoanRequest
+  (loanCid, _) <- submit bank do
+    exerciseCmd loanReqCid (ApproveRequest with loanLimitContractId = loanLimitCid)
 
-    id : LoanRequestKey
-    borrower : Party
-    bank : Party
-    borrowerAccountId : AccountId
-    loanRequestId : Text
-    loanAmount : Decimal
-    loanTerm : Int
-    requestDate : Time
-  -- Step 3) Bank approves the LoanRequest
-  loanContractId <- submit bank do
-    exerciseCmd loanReqCid ApproveRequest
-
-  -- Step 4) Verify that the Loan contract is created
-  loanContract <- queryContractId @Loan loanCid
+  -- Step 5) Verify that the Loan contract is created
+  someLoan <- queryContractId @Loan loanCid
   debug ("Loan contract created with ID: " <> show loanCid)
-  pure
+  pure ()

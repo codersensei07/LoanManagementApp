@@ -35,10 +35,10 @@ queryParties = do
     knownParties <- listKnownParties
     debug knownParties
 
-    let customerA = party <$> find (\p -> p.displayName == Some "John") knownParties
-    let customerB = party <$> find (\p -> p.displayName == Some "Alex") knownParties
-    let customerC = party <$> find (\p -> p.displayName == Some "Bob") knownParties
-    let mBank = party <$> find (\p -> p.displayName == Some "GSBank") knownParties
+    let customerA = party <$> L.find (\p -> p.displayName == Some "John") knownParties
+    let customerB = party <$> L.find (\p -> p.displayName == Some "Alex") knownParties
+    let customerC = party <$> L.find (\p -> p.displayName == Some "Bob") knownParties
+    let mBank = party <$> L.find (\p -> p.displayName == Some "GSBank") knownParties
 
     case (customerA,customerB, customerC, mBank) of
       (Some customerA, Some customerB, Some customerC, Some bank) -> pure (Some (LedgerParties customerA customerB customerC bank))

@@ -1,4 +1,4 @@
-module Loan.LoanLimit where
+module Main.Loan.LoanLimit where
 
 import DA.Assert
 

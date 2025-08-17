@@ -1,4 +1,4 @@
-module Utils.Utils where
+module Main.Utils.Utils where
 
 -- placeholder for the actual implementation
 
