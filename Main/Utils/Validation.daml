@@ -1,4 +1,4 @@
-module Utils.Validation where
+module Main.Utils.Validation where
 
 import DA.Action
 import DA.Exception (throw)

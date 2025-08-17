@@ -1,4 +1,4 @@
-module Utils.Enums where
+module Main.Utils.Enums where
 
 data RequestStatus = 
     Pending 

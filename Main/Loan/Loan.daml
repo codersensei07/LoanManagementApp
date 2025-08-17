@@ -1,7 +1,9 @@
-module Loan.Loan where
+module Main.Loan.Loan where
 
-import Token.Token as TokenModule
-import Utils.Utils
+import Main.Token.Token as TokenModule
+import Main.Utils.Utils
+import DA.Assert
+import DA.Time
 
 import qualified DA.Set as Set
 
@@ -22,12 +24,12 @@ template Loan
       controller bank
       do
         now <- getTime
-        let numberOfTokens = intToDecimal termInMonths * monthlyEMI : Decimal
+        let numberOfTokens = (fromIntegral termInMonths) * monthlyEMI
 
         let dummyAccount = AccountId with accountOperator = bank, accountNumber=""
             -- borrowerAccount : AccountId = fromOptional dummyAccount "UUID-893848-ISYS-989"
 
-        tokenTransferContractId <- create Token
+        tokenTransferContractId <- create TokenModule.Token
           with
             id = TokenId with accountOperator = dummyAccount.accountOperator, accountNumber=dummyAccount.accountNumber, loanRequestId
             bank
